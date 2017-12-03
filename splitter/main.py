@@ -4,6 +4,7 @@ from shapely.geometry import Point, LineString
 import geopy.distance
 import pandas as pd
 import datetime
+import threading
 
 import argparse
 
@@ -20,8 +21,37 @@ def return_pairs(coords):
 def get_coords_from_point(point):
     return (point.xy[0][0], point.xy[1][0])
 
-def filter_by_dist(data, point, distance_km=25):
-    return data[data.geometry.apply(lambda x: geopy.distance.vincenty(get_coords_from_point(x.centroid), get_coords_from_point(point)).km, convert_dtype=True) <= distance_km]
+class DistFilterThread (threading.Thread):
+   def __init__(self, threadID, name, i, data, batch_size, distance_km, point):
+      threading.Thread.__init__(self)
+      self.threadID = threadID
+      self.name = name
+      self.i = i
+      self.data = data
+      self.batch_size = batch_size
+      self.batch_data = data[i * batch_size: (i+1) * batch_size]
+      self.distance_km = distance_km
+      self.point = point
+      self.batch_res = None
+
+      
+   def run(self):
+      self.batch_res = self.batch_data[self.batch_data.geometry.apply(lambda x: geopy.distance.vincenty(get_coords_from_point(x.centroid), get_coords_from_point(self.point)).km, convert_dtype=True) <= self.distance_km]
+
+def filter_by_dist(data, point, n_threads, distance_km=25):
+    batch_size = len(data)/n_threads
+    threads = []
+    for i in range(n_threads):
+        thread = DistFilterThread(i, "DistFilt-" + str(i), i, data, batch_size, distance_km, point)
+        thread.start()
+        threads.append(thread)
+
+    results = []
+    for thread in threads:
+        thread.join()
+        results.append(thread.batch_res)
+    
+    return pd.concat(results)
 
 def get_by_lot(data, plan, lot):
     # Might return more than one entry
@@ -72,6 +102,21 @@ def is_corner_lot(data, index, offset_range=16):
 
     return True
 
+class CornerLotIdentifierThread (threading.Thread):
+   def __init__(self, threadID, name, i, filteredmapfile, offsetrange, indices, batch_size):
+      threading.Thread.__init__(self)
+      self.threadID = threadID
+      self.name = name
+      self.i = i
+      self.filteredmapfile = filteredmapfile
+      self.offsetrange = offsetrange
+      self.thread_indices = indices[i * batch_size: (i+1) * batch_size]
+      self.batch_res = None
+
+      
+   def run(self):
+      self.batch_res = self.thread_indices.apply(lambda x: is_corner_lot(self.filteredmapfile, x, self.offsetrange))
+
 def main():
     pass
 
@@ -112,17 +157,35 @@ if __name__ == "__main__":
                         default=False,
                         help='To debug')
 
+    parser.add_argument('--nthreads', 
+                        metavar='nthreads', 
+                        type=int, 
+                        nargs='?',
+                        default=128,
+                        help='To debug')
+
     args = parser.parse_args()
     
     args.debug = True
 
     mapfile = gpd.read_file(args.mapfile)
 
-    filteredmapfile = filter_by_dist(mapfile, BRISBANE_POINT, args.radialfilter)
+    filteredmapfile = filter_by_dist(mapfile, BRISBANE_POINT, args.nthreads, args.radialfilter)
 
     filteredmapfile.reset_index(inplace=True)
 
-    filteredmapfile["is_corner"] = pd.Series(filteredmapfile.index).apply(lambda x: is_corner_lot(filteredmapfile, x, args.offsetrange))
+    batch_size = len(filteredmapfile)/args.nthreads
+    
+    indices = pd.Series(filteredmapfile.index)
+    threads = []
+    for i in range(args.nthreads):
+        thread = CornerLotIdentifierThread(i, "CornerIdent-" + str(i), i, filteredmapfile, args.offsetrange, indices, batch_size)
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
+        filteredmapfile[thread.thread_indices]["is_corner"] = thread.batch_res
 
     print filteredmapfile[filteredmapfile["is_corner"] == True]
     print sum(filteredmapfile["is_corner"])
