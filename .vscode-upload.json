@@ -1,0 +1,21 @@
+[{
+    "name":"gong-dev",
+    "host": "35.166.180.222",
+    "port": 22,
+    "username": "ec2-user",
+    "password": "",
+    "remotePath": "/home/ec2-user/",
+    "localPath": "/Users/macbook/Development/builteasy",
+    "disable": false,
+    "private_key": "/Users/macbook/.ssh/gong-srr.pem"
+},{
+    "name":"",
+    "host": "",
+    "port": 22,
+    "username": "",
+    "password": "",
+    "remotePath": "",
+    "localPath": "",
+    "disable": false,
+    "private_key": "~/.ssh/id_rsa"
+}]
