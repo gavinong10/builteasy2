@@ -35,4 +35,4 @@ if __name__ == "__main__":
 
     mapfile = gpd.read_file(args.mapfile)
     mapfile = mapfile.iloc[args.start:args.end]
-    mapfile.to_file(driver='ESRI Shapefile',filename=args.outputfilepath)
+    mapfile.to_file(driver='ESRI Shapefile',filename=args.outputfilepath[0])

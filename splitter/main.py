@@ -7,8 +7,23 @@ import datetime
 import threading
 
 import argparse
+from multiprocessing import Pool
 
-BRISBANE_POINT=Point(153.025100, -27.469515)
+import errno    
+import os
+
+#BRISBANE_POINT=Point(153.025100, -27.469515)
+BRISBANE_COORDS=(153.025100, -27.469515)
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 def return_pairs(coords):
     pairs = []
@@ -33,25 +48,33 @@ class DistFilterThread (threading.Thread):
       self.distance_km = distance_km
       self.point = point
       self.batch_res = None
-
       
    def run(self):
       self.batch_res = self.batch_data[self.batch_data.geometry.apply(lambda x: geopy.distance.vincenty(get_coords_from_point(x.centroid), get_coords_from_point(self.point)).km, convert_dtype=True) <= self.distance_km]
+      return self.batch_res
+
+def DistFilterThreading(i, data, batch_size, distance_km, point):
+    batch_data = data[i * batch_size: (i+1) * batch_size]
+    return batch_data[batch_data.geometry.apply(lambda x: geopy.distance.vincenty(get_coords_from_point(x.centroid), get_coords_from_point(point)).km, convert_dtype=True) <= distance_km]
+
+def pdist(i):
+    return DistFilterThreading(*i)
 
 def filter_by_dist(data, point, n_threads, distance_km=25):
     batch_size = len(data)/n_threads
-    threads = []
-    for i in range(n_threads):
-        thread = DistFilterThread(i, "DistFilt-" + str(i), i, data, batch_size, distance_km, point)
-        thread.start()
-        threads.append(thread)
-
-    results = []
-    for thread in threads:
-        thread.join()
-        results.append(thread.batch_res)
+    #threads = []
+    thread_fns = []
+    sequence = [(i, data, batch_size, distance_km, point) for i in range(n_threads)]
+    result = pool.map(pdist, sequence)
+    cleaned = [x for x in result if not x is None]
+    pool.close()
+    pool.join()
     
-    return pd.concat(results)
+    return pd.concat(cleaned)
+
+def filter_by_area(data, min_area_m2=700, max_area_m2=1200):
+    area = data.geometry.area * 1e10
+    return data[(area >= min_area_m2) & (area <= max_area_m2)]
 
 def get_by_lot(data, plan, lot):
     # Might return more than one entry
@@ -76,7 +99,7 @@ def is_corner_lot(data, index, offset_range=16):
     # As you rotate these 4 lines, if two lines are subsequently untouched, this is a corner lot.
 
     # Algorithm 3
-    geom = data.iloc[index]['geometry']
+    geom = data.loc[index]['geometry']
 
     # Get the minimum rotated rectangle bounding box
     min_rect_bbox = geom.minimum_rotated_rectangle
@@ -93,29 +116,37 @@ def is_corner_lot(data, index, offset_range=16):
     num_adjacent = 0
     for sidelot_candidate_offset in range(offset_range/2):
         for side_obj in side_objs:
-            if index + sidelot_candidate_offset + 1 < len(data):
-                num_adjacent += side_obj['trunc_line'].intersects(data.iloc[index + sidelot_candidate_offset + 1].geometry)
-            if index - (sidelot_candidate_offset + 1) >= 0:
-                num_adjacent += side_obj['trunc_line'].intersects(data.iloc[index - (sidelot_candidate_offset + 1)].geometry)
+            if index + sidelot_candidate_offset + 1 in data.index:
+                num_adjacent += side_obj['trunc_line'].intersects(data.loc[index + sidelot_candidate_offset + 1].geometry)
+            if index - (sidelot_candidate_offset + 1) in data.index:
+                num_adjacent += side_obj['trunc_line'].intersects(data.loc[index - (sidelot_candidate_offset + 1)].geometry)
             if num_adjacent >= 2:
                 return False
 
     return True
 
-class CornerLotIdentifierThread (threading.Thread):
-   def __init__(self, threadID, name, i, filteredmapfile, offsetrange, indices, batch_size):
-      threading.Thread.__init__(self)
-      self.threadID = threadID
-      self.name = name
-      self.i = i
-      self.filteredmapfile = filteredmapfile
-      self.offsetrange = offsetrange
-      self.thread_indices = indices[i * batch_size: (i+1) * batch_size]
-      self.batch_res = None
+# class CornerLotIdentifierThread (threading.Thread):
+#    def __init__(self, threadID, name, i, filteredmapfile, offsetrange, indices, batch_size):
+#       threading.Thread.__init__(self)
+#       self.threadID = threadID
+#       self.name = name
+#       self.i = i
+#       self.filteredmapfile = filteredmapfile
+#       self.offsetrange = offsetrange
+#       self.thread_indices = indices[i * batch_size: (i+1) * batch_size]
+#       self.batch_res = None
 
       
-   def run(self):
-      self.batch_res = self.thread_indices.apply(lambda x: is_corner_lot(self.filteredmapfile, x, self.offsetrange))
+#    def run(self):
+#       self.batch_res = self.thread_indices.to_series().apply(lambda x: is_corner_lot(self.filteredmapfile, x, self.offsetrange))
+#       return self.batch_res
+
+def CornerLotIdentifyThreading(i, filteredmapfile, offsetrange, indices, batch_size):
+    thread_indices = indices[i * batch_size: (i+1) * batch_size]
+    return thread_indices.to_series().apply(lambda x: is_corner_lot(filteredmapfile, x, offsetrange))
+
+def pcorner(i):
+    return CornerLotIdentifyThreading(*i)
 
 def main():
     pass
@@ -141,7 +172,7 @@ if __name__ == "__main__":
                         type=int, 
                         nargs='?',
                         default=1000,
-                        help='# kilometers to filter search by')
+                        help='# surrounding(ish) listings to examine')
 
     parser.add_argument('--outputfilepath', 
                         metavar=('file path',), 
@@ -156,6 +187,26 @@ if __name__ == "__main__":
                         nargs='?',
                         default=False,
                         help='To debug')
+    parser.add_argument('--center', 
+                        metavar=('longitude', 'latitude'), 
+                        type=float, 
+                        nargs=2,
+                        default=BRISBANE_COORDS,
+                        help='Center point of search (Default is Brisbane City')
+
+    parser.add_argument('--minaream2', 
+                        metavar='minaream2', 
+                        type=int, 
+                        nargs='?',
+                        default=700,
+                        help='area')
+
+    parser.add_argument('--maxaream2', 
+                        metavar='maxaream2', 
+                        type=int, 
+                        nargs='?',
+                        default=1200,
+                        help='area')
 
     parser.add_argument('--nthreads', 
                         metavar='nthreads', 
@@ -164,32 +215,41 @@ if __name__ == "__main__":
                         default=128,
                         help='To debug')
 
+    # TODO: Take out of global namespace
     args = parser.parse_args()
     
+    center = Point(*args.center)
     args.debug = True
 
     mapfile = gpd.read_file(args.mapfile)
 
-    filteredmapfile = filter_by_dist(mapfile, BRISBANE_POINT, args.nthreads, args.radialfilter)
+    pool = Pool(processes=args.nthreads)
+    filteredmapfile = filter_by_dist(mapfile, center, args.nthreads, args.radialfilter)
+    filteredmapfile["is_corner"] = 0
 
-    filteredmapfile.reset_index(inplace=True)
+    #filteredmapfile.reset_index(inplace=True)
 
     batch_size = len(filteredmapfile)/args.nthreads
     
-    indices = pd.Series(filteredmapfile.index)
-    threads = []
-    for i in range(args.nthreads):
-        thread = CornerLotIdentifierThread(i, "CornerIdent-" + str(i), i, filteredmapfile, args.offsetrange, indices, batch_size)
-        thread.start()
-        threads.append(thread)
+    indices = filteredmapfile.index
 
-    for thread in threads:
-        thread.join()
-        filteredmapfile[thread.thread_indices]["is_corner"] = thread.batch_res
+    pool = Pool(processes=args.nthreads)
+    sequence = [(i, filteredmapfile, args.offsetrange, indices, batch_size) for i in range(args.nthreads)]
+    result = pool.map(pcorner, sequence)
+    cleaned = [x for x in result if not x is None]
+    pool.close()
+    pool.join()
+
+    for res in cleaned:
+        print filteredmapfile.index
+        filteredmapfile["is_corner"].loc[res.index] = res.astype(int)
+
+    filteredmapfile = filter_by_area(filteredmapfile, args.minaream2, args.maxaream2)
 
     print filteredmapfile[filteredmapfile["is_corner"] == True]
     print sum(filteredmapfile["is_corner"])
 
+    mkdir_p(args.outputfilepath)
     filteredmapfile.to_file(driver='ESRI Shapefile',filename=args.outputfilepath)
 
 # TODO: Filter by area
