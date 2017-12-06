@@ -1,5 +1,4 @@
 import geopandas as gpd
-import fiona
 from shapely.geometry import Point, LineString
 import geopy.distance
 import pandas as pd
@@ -53,36 +52,18 @@ class DistFilterThread (threading.Thread):
       self.batch_res = self.batch_data[self.batch_data.geometry.apply(lambda x: geopy.distance.vincenty(get_coords_from_point(x.centroid), get_coords_from_point(self.point)).km, convert_dtype=True) <= self.distance_km]
       return self.batch_res
 
-def DistFilterThreading(i, batch_data, batch_size, distance_km, point):
-    batch_data["passfilter"] = batch_data["passfilter"] & batch_data.geometry.apply(lambda x: geopy.distance.vincenty(get_coords_from_point(x.centroid), get_coords_from_point(point)).km, convert_dtype=True) <= distance_km
-    return batch_data
-
-def pdist(i):
-    return DistFilterThreading(*i)
-
-def filter_by_dist(data, point, n_threads, distance_km=25):
-    batch_size = len(data)/n_threads
-    thread_fns = []
-    sequence = [(i, data[i * batch_size: (i+1) * batch_size], batch_size, distance_km, point) for i in range(n_threads)]
-    result = pool.map(pdist, sequence)
-    cleaned = [x for x in result if not x is None]
-    pool.close()
-    pool.join()
-    
-    return pd.concat(cleaned)
-
 def filter_by_area(data, min_area_m2=700, max_area_m2=1200):
     area = data.geometry.area * 1e10
     return data[(area >= min_area_m2) & (area <= max_area_m2)]
 
 def get_by_lot(data, plan, lot):
     # Might return more than one entry
-    plan = unicode(plan)
+    # plan = unicode(plan)
     lot = unicode(lot)
     entry = data[(data["PLAN"] == plan) & (data["LOT"] == lot)]
     return entry
 
-def is_corner_lot(data, index, max_dist=0.0001):
+def is_corner_lot(data, index, dist_val):
     #Algorithm 1
     # Create a marked list '0' of all the lines of a boundary.
     # Get a random line boundary
@@ -99,33 +80,32 @@ def is_corner_lot(data, index, max_dist=0.0001):
 
     # Algorithm 3
     geom = data.loc[index]['geometry']
-    passfilterdata = data[data["passfilter"]]
 
-    # Get the minimum rotated rectangle bounding box
-    min_rect_bbox = geom.minimum_rotated_rectangle
     # Extract the centroids and lengths of each side
     corner_coords = zip(*geom.minimum_rotated_rectangle.exterior.xy)
     side_objs = [{"pair": pair, "orig_line": LineString(pair)} for pair in return_pairs(corner_coords)]
     for side_obj in side_objs:
-        side_obj["length_m"] = geopy.distance.vincenty(side_obj["pair"][0], side_obj["pair"][1]).m
+        #side_obj["length_m"] = geopy.distance.vincenty(side_obj["pair"][0], side_obj["pair"][1]).m
         side_obj["centroid"] = side_obj["orig_line"].centroid
         # Generate a set of lengths that is 50% in length
         side_obj["trunc_line"] = LineString((Point(((pair[0][0] + side_obj["centroid"].xy[0][0]) * 0.5, (pair[0][1] + side_obj["centroid"].xy[1][0]) * 0.5)), Point(((pair[1][0]  + side_obj["centroid"].xy[0][0]) * 0.5, (pair[1][1] + side_obj["centroid"].xy[1][0]) * 0.5))))
-
-    # If >= 2 sides do NOT intersect, then it is a corner lot
-    candidate_geoms = passfilterdata[passfilterdata.geometry.distance(geom) <= max_dist].geometry 
-
+    # # If >= 2 sides do NOT intersect, then it is a corner lotsl
+    candidate_geoms = data.cx[geom.bounds[0]-dist_val:geom.bounds[2]+dist_val, geom.bounds[1]-dist_val: geom.bounds[3]+dist_val].geometry
     num_adjacent = 0
     for side_obj in side_objs:
-        num_adjacent += candidate_geoms.intersects(side_obj['trunc_line']).sum() > 0
+        num_adjacent += (candidate_geoms.intersects(side_obj['trunc_line']).sum() > 1)
         if num_adjacent >= 2:
             return False
-
+    
     return True
 
-def CornerLotIdentifyThreading(i, mapfile, batch_size, max_dist=0.0001):
-    thread_indices = mapfile.index[i * batch_size: (i+1) * batch_size]
-    return thread_indices.to_series().apply(lambda x: is_corner_lot(mapfile, x, max_dist))
+def CornerLotIdentifyThreading(i, mapfile, batch_size, dist_val):
+    if (i+2) * batch_size > (len(mapfile) - 1):
+        end = len(mapfile) - 1
+    else:
+        end = min((i+1) * batch_size, len(mapfile) - 1)
+    thread_indices = mapfile.iloc[i * batch_size: (i+1) * batch_size].index
+    return thread_indices.to_series().apply(lambda x: is_corner_lot(mapfile, x, dist_val) )
 
 def pcorner(i):
     return CornerLotIdentifyThreading(*i)
@@ -133,13 +113,17 @@ def pcorner(i):
 def filter_by_plan(data):
     return data[data["PLAN"].str.startswith("SP") | data["PLAN"].str.startswith("RP")]
 
+def filter_by_regularity(data, factor=0.8):
+    regularity = data.geometry.apply(lambda x: x.area / x.minimum_rotated_rectangle.area)
+    return data[regularity > factor]
+
 def main():
     pass
 
 if __name__ == "__main__":
     
-    #sys.argv = ['', '--mapfile', 'data/truncated/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--radialfilter', '3000', '--center', '153.0632831', '-27.378986', '--nthreads', '2']
-    #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--radialfilter', '3', '--center', '153.0632831', '-27.378986', '--nthreads', '3']
+    #sys.argv = ['', '--mapfile', 'data/truncated/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--searchwindow', '153.0548787','-27.3607943','153.105812','-27.396514', '--nthreads', '3']
+    #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp',  '--searchwindow', '153.0548787','-27.3607943','153.105812','-27.396514', '--nthreads', '3']
     parser = argparse.ArgumentParser(description='Process arguments to the data analyzer.')
     parser.add_argument('--mapfile', 
                         metavar='file path', 
@@ -148,26 +132,26 @@ if __name__ == "__main__":
                         default="data/boundaries_gdb/data.gdb",
                         help='The path to the mapfile data')
 
-    parser.add_argument('--radialfilter', 
-                        metavar='radius', 
-                        type=int, 
+    parser.add_argument('--adjacentwidth', 
+                        metavar='degree', 
+                        type=float, 
                         nargs='?',
-                        default=30,
-                        help='# kilometers to filter search by')
+                        default=0.002,
+                        help='The degrees to search around a property')
 
-    parser.add_argument('--radialfilterfinalizefactor', 
-                        metavar='radius', 
+    parser.add_argument('--finalizefilterfactor', 
+                        metavar='factor', 
                         type=float, 
                         nargs='?',
                         default=0.9,
-                        help='factor to scale radial filter once analysis is complete (to remove border cases)')
+                        help='The factor to reduce the result by to cut off the edge')
 
-    parser.add_argument('--max_dist_surrounding', 
-                        metavar='distance (unitless cartesian)', 
+    parser.add_argument('--searchwindow', 
+                        metavar=('long1', 'lat1', 'long2', 'lat2'), 
                         type=float, 
-                        nargs='?',
-                        default=0.0001,
-                        help='# unitless distance around single properties to compare against')
+                        nargs=4,
+                        default=(153.0548787,-27.3607943,153.105812,-27.396514),
+                        help='The window to search for properties')
 
     parser.add_argument('--outputfilepath', 
                         metavar=('file path',), 
@@ -182,12 +166,6 @@ if __name__ == "__main__":
                         nargs='?',
                         default=False,
                         help='To debug')
-    parser.add_argument('--center', 
-                        metavar=('longitude', 'latitude'), 
-                        type=float, 
-                        nargs=2,
-                        default=BRISBANE_COORDS,
-                        help='Center point of search (Default is Brisbane City')
 
     parser.add_argument('--minaream2', 
                         metavar='minaream2', 
@@ -203,6 +181,13 @@ if __name__ == "__main__":
                         default=1200,
                         help='area')
 
+    parser.add_argument('--loadskip', 
+                        metavar='level', 
+                        type=int, 
+                        nargs='?',
+                        default=0,
+                        help='Disable for running execfile')
+
     parser.add_argument('--nthreads', 
                         metavar='nthreads', 
                         type=int, 
@@ -212,33 +197,29 @@ if __name__ == "__main__":
 
     # TODO: Take out of global namespace
     args = parser.parse_args()
-    
-    center = Point(*args.center)
-    args.debug = True
 
-    mapfile = gpd.read_file(args.mapfile)
-    mapfile["passfilter"] = True
+    if args.loadskip < 1:
+        mapfile = gpd.read_file(args.mapfile)
     mapfile["is_corner"] = 0
-
-    pool = Pool(processes=args.nthreads)
-    mapfile = filter_by_dist(mapfile, center, args.nthreads, args.radialfilter)
     
-    filteredmapfile = mapfile[mapfile["passfilter"] != 0]
+    window = args.searchwindow
+    if args.loadskip < 2:
+        filteredmapfile = mapfile.cx[window[0]:window[2], window[1]:window[3]]
 
-    #mapfile.reset_index(inplace=True)
-
-    batch_size = len(mapfile)/args.nthreads
+    batch_size = len(filteredmapfile)/args.nthreads
     
     pool = Pool(processes=args.nthreads)
-    sequence = [(i, filteredmapfile, batch_size, args.max_dist_surrounding) for i in range(args.nthreads)]
+    sequence = []
+    for i in range(args.nthreads):
+        sequence.append((i, filteredmapfile, batch_size, args.adjacentwidth))
+
     result = pool.map(pcorner, sequence)
     cleaned = [x for x in result if not x is None]
     pool.close()
     pool.join()
 
     for res in cleaned:
-        print filteredmapfile.index
-        filteredmapfile["is_corner"].loc[res.index] = res.astype(int)
+        filteredmapfile["is_corner"].loc[res.index] = res
 
     filteredmapfile = filter_by_area(filteredmapfile, args.minaream2, args.maxaream2)
 
@@ -249,12 +230,18 @@ if __name__ == "__main__":
         if filteredmapfile[column].dtype == bool:
             filteredmapfile[column] = filteredmapfile[column].astype(int)
 
-    # Filter by finalize factor radius
-    filteredmapfile = filter_by_dist(mapfile, center, args.nthreads, args.radialfilterfinalizefactor*args.radialfilter)
-    filteredmapfile = filteredmapfile[filteredmapfile["passfilter"] != 0]
+    # Filter by finalize factor
+    factor=args.finalizefilterfactor
+    if args.debug:
+        print("Final window: ", factor*window[0],factor*window[2], factor*window[1],factor*window[3])
+    #TODO: Fix this next line:
+    #filteredmapfile = filteredmapfile.cx[factor*window[0]:factor*window[2], factor*window[1]:factor*window[3]]
 
     # Filter by plan
     filteredmapfile = filter_by_plan(filteredmapfile)
+
+    # Filter by regularity
+    filteredmapfile = filter_by_regularity(filteredmapfile)
 
     mkdir_p(args.outputfilepath)
     filteredmapfile.to_file(driver='ESRI Shapefile',filename=args.outputfilepath)
@@ -264,15 +251,4 @@ if __name__ == "__main__":
 
 #mapfile[(mapfile["PLAN"] == u'SP131902') & (mapfile["LOT"] == u'210')].iloc[0].geometry.touches(mapfile[(mapfile["PLAN"] == u'SP131902') & (mapfile["LOT"] == u'209')].iloc[0].geometry)
 
-
-#TODO:
-# FIlter this:
-#mapfile["PLAN"].str.startswith("SP") | mapfile["PLAN"].str.startswith("RP")
-#mapfile.area * 1e10 < 1000
-#Shape irregularity
-#mapfile["regularity"] = mapfile.geometry.apply(lambda x: x.area / x.minimum_rotated_rectangle.area)
-#mapfile[(mapfile["regularity"] > 0.8)]
-
-
-#Filter location by cx indexer
-#
+# TODO: Test touches algorithm
