@@ -7,6 +7,7 @@ import threading
 
 import argparse
 from multiprocessing import Pool
+from filterfetch.filterfetch import get_by_lot, filter_by_plan, filter_by_regularity, filter_by_area
 
 import errno    
 import os
@@ -35,34 +36,6 @@ def return_pairs(coords):
 def get_coords_from_point(point):
     return (point.xy[0][0], point.xy[1][0])
 
-class DistFilterThread (threading.Thread):
-   def __init__(self, threadID, name, i, data, batch_size, distance_km, point):
-      threading.Thread.__init__(self)
-      self.threadID = threadID
-      self.name = name
-      self.i = i
-      self.data = data
-      self.batch_size = batch_size
-      self.batch_data = data[i * batch_size: (i+1) * batch_size]
-      self.distance_km = distance_km
-      self.point = point
-      self.batch_res = None
-      
-   def run(self):
-      self.batch_res = self.batch_data[self.batch_data.geometry.apply(lambda x: geopy.distance.vincenty(get_coords_from_point(x.centroid), get_coords_from_point(self.point)).km, convert_dtype=True) <= self.distance_km]
-      return self.batch_res
-
-def filter_by_area(data, min_area_m2=700, max_area_m2=1200):
-    area = data.geometry.area * 1e10
-    return data[(area >= min_area_m2) & (area <= max_area_m2)]
-
-def get_by_lot(data, plan, lot):
-    # Might return more than one entry
-    # plan = unicode(plan)
-    lot = unicode(lot)
-    entry = data[(data["PLAN"] == plan) & (data["LOT"] == lot)]
-    return entry
-
 def is_corner_lot(data, index, dist_val):
     #Algorithm 1
     # Create a marked list '0' of all the lines of a boundary.
@@ -87,8 +60,8 @@ def is_corner_lot(data, index, dist_val):
     for side_obj in side_objs:
         #side_obj["length_m"] = geopy.distance.vincenty(side_obj["pair"][0], side_obj["pair"][1]).m
         side_obj["centroid"] = side_obj["orig_line"].centroid
-        # Generate a set of lengths that is 50% in length
-        side_obj["trunc_line"] = LineString((Point(((pair[0][0] + side_obj["centroid"].xy[0][0]) * 0.5, (pair[0][1] + side_obj["centroid"].xy[1][0]) * 0.5)), Point(((pair[1][0]  + side_obj["centroid"].xy[0][0]) * 0.5, (pair[1][1] + side_obj["centroid"].xy[1][0]) * 0.5))))
+        # Generate a set of lengths that is 95% in length
+        side_obj["trunc_line"] = LineString((Point(((pair[0][0] + side_obj["centroid"].xy[0][0]) * 0.95, (pair[0][1] + side_obj["centroid"].xy[1][0]) * 0.95)), Point(((pair[1][0]  + side_obj["centroid"].xy[0][0]) * 0.95, (pair[1][1] + side_obj["centroid"].xy[1][0]) * 0.95))))
     # # If >= 2 sides do NOT intersect, then it is a corner lotsl
     candidate_geoms = data.cx[geom.bounds[0]-dist_val:geom.bounds[2]+dist_val, geom.bounds[1]-dist_val: geom.bounds[3]+dist_val].geometry
     num_adjacent = 0
@@ -98,6 +71,10 @@ def is_corner_lot(data, index, dist_val):
             return False
     
     return True
+
+def is_corner_lot_2(data, index, dist_val):
+    # TODO: The untouched edge of the polygon is greater than the biggest width of the polygon
+    geom = data.loc[index]['geometry']
 
 def CornerLotIdentifyThreading(i, mapfile, batch_size, dist_val):
     if (i+2) * batch_size > (len(mapfile) - 1):
@@ -109,13 +86,6 @@ def CornerLotIdentifyThreading(i, mapfile, batch_size, dist_val):
 
 def pcorner(i):
     return CornerLotIdentifyThreading(*i)
-
-def filter_by_plan(data):
-    return data[data["PLAN"].str.startswith("SP") | data["PLAN"].str.startswith("RP")]
-
-def filter_by_regularity(data, factor=0.8):
-    regularity = data.geometry.apply(lambda x: x.area / x.minimum_rotated_rectangle.area)
-    return data[regularity > factor]
 
 def main():
     pass
@@ -204,7 +174,7 @@ if __name__ == "__main__":
     
     window = args.searchwindow
     if args.loadskip < 2:
-        filteredmapfile = mapfile.cx[window[0]:window[2], window[1]:window[3]]
+        filteredmapfile = filter_by_coords(mapfile, *window)
 
     batch_size = len(filteredmapfile)/args.nthreads
     
