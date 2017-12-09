@@ -1,20 +1,30 @@
+#sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True']
+#sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
+#import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True']; execfile('main.py')
+#sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
+
 import geopandas as gpd
 from shapely.geometry import Point, LineString
 import geopy.distance
 import pandas as pd
 import datetime
 import threading
+import logging
 
 import argparse
 from multiprocessing import Pool
-from filterfetch.filterfetch import get_by_lot, filter_by_plan, filter_by_regularity, filter_by_area
+from filterfetch.filterfetch import transform_point_to_cart, box_around_cart_point
+from filterfetch.data import Mapfile
+
+from algorithms.cornerfinder.cornerfinder import DimensionCornerFinder
 
 import errno    
 import os
 
-#BRISBANE_POINT=Point(153.025100, -27.469515)
-BRISBANE_COORDS=(153.025100, -27.469515)
+# Shapely logging fix
+logging.basicConfig()
 
+BRISBANE_COORDS=(153.025100, -27.469515)
 
 def mkdir_p(path):
     try:
@@ -25,75 +35,17 @@ def mkdir_p(path):
         else:
             raise
 
-def return_pairs(coords):
-    pairs = []
-    i = 1
-    for i in range(len(coords)):
-        pairs.append((coords[i-1], coords[i]))
-        i += 1
-    return pairs
-
-def get_coords_from_point(point):
-    return (point.xy[0][0], point.xy[1][0])
-
-def is_corner_lot(data, index, dist_val):
-    #Algorithm 1
-    # Create a marked list '0' of all the lines of a boundary.
-    # Get a random line boundary
-    # Extend on that line until there is 22.5 degrees of variation max between the lines
-    # Mark all these lines as 'seen' and ensure that length meets a certain threshold
-    # Move along adjacent lines until a length is met above a min distance
-    # Check angle is >75 degrees between the longest line between the marked section and the new section.
-
-    #Algorithm 2
-    # Get the centroid of the property and draw a line to the nearest section of the longest boundary line
-    # Minimum bounding?
-    # Draw lines in 90 degree increments between these points
-    # As you rotate these 4 lines, if two lines are subsequently untouched, this is a corner lot.
-
-    # Algorithm 3
-    geom = data.loc[index]['geometry']
-
-    # Extract the centroids and lengths of each side
-    corner_coords = zip(*geom.minimum_rotated_rectangle.exterior.xy)
-    side_objs = [{"pair": pair, "orig_line": LineString(pair)} for pair in return_pairs(corner_coords)]
-    for side_obj in side_objs:
-        #side_obj["length_m"] = geopy.distance.vincenty(side_obj["pair"][0], side_obj["pair"][1]).m
-        side_obj["centroid"] = side_obj["orig_line"].centroid
-        # Generate a set of lengths that is 95% in length
-        side_obj["trunc_line"] = LineString((Point(((pair[0][0] + side_obj["centroid"].xy[0][0]) * 0.95, (pair[0][1] + side_obj["centroid"].xy[1][0]) * 0.95)), Point(((pair[1][0]  + side_obj["centroid"].xy[0][0]) * 0.95, (pair[1][1] + side_obj["centroid"].xy[1][0]) * 0.95))))
-    # # If >= 2 sides do NOT intersect, then it is a corner lotsl
-    candidate_geoms = data.cx[geom.bounds[0]-dist_val:geom.bounds[2]+dist_val, geom.bounds[1]-dist_val: geom.bounds[3]+dist_val].geometry
-    num_adjacent = 0
-    for side_obj in side_objs:
-        num_adjacent += (candidate_geoms.intersects(side_obj['trunc_line']).sum() > 1)
-        if num_adjacent >= 2:
-            return False
-    
-    return True
-
-def is_corner_lot_2(data, index, dist_val):
-    # TODO: The untouched edge of the polygon is greater than the biggest width of the polygon
-    geom = data.loc[index]['geometry']
-
-def CornerLotIdentifyThreading(i, mapfile, batch_size, dist_val):
-    if (i+2) * batch_size > (len(mapfile) - 1):
-        end = len(mapfile) - 1
-    else:
-        end = min((i+1) * batch_size, len(mapfile) - 1)
-    thread_indices = mapfile.iloc[i * batch_size: (i+1) * batch_size].index
-    return thread_indices.to_series().apply(lambda x: is_corner_lot(mapfile, x, dist_val) )
-
-def pcorner(i):
-    return CornerLotIdentifyThreading(*i)
+#################
+def filter_search_scope(mf, centerpoint, perimeterdist):
+        center_cart_point = transform_point_to_cart(Point(*centerpoint))
+        startpnt, endpnt = box_around_cart_point(center_cart_point, perimeterdist/2)
+        mf.filter_by_cartesian(startpnt.x, startpnt.y, endpnt.x, endpnt.y)
 
 def main():
     pass
 
 if __name__ == "__main__":
     
-    #sys.argv = ['', '--mapfile', 'data/truncated/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--searchwindow', '153.0548787','-27.3607943','153.105812','-27.396514', '--nthreads', '3']
-    #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp',  '--searchwindow', '153.0548787','-27.3607943','153.105812','-27.396514', '--nthreads', '3']
     parser = argparse.ArgumentParser(description='Process arguments to the data analyzer.')
     parser.add_argument('--mapfile', 
                         metavar='file path', 
@@ -102,26 +54,34 @@ if __name__ == "__main__":
                         default="data/boundaries_gdb/data.gdb",
                         help='The path to the mapfile data')
 
-    parser.add_argument('--adjacentwidth', 
-                        metavar='degree', 
+    parser.add_argument('--adjacentdist', 
+                        metavar='meters', 
                         type=float, 
                         nargs='?',
-                        default=0.002,
-                        help='The degrees to search around a property')
+                        default=5,
+                        help='The distance to search around a property')
 
-    parser.add_argument('--finalizefilterfactor', 
-                        metavar='factor', 
-                        type=float, 
-                        nargs='?',
-                        default=0.9,
-                        help='The factor to reduce the result by to cut off the edge')
+    # TODO 2017-12-08 11:08:31
+    # parser.add_argument('--finalizefilterfactor', 
+    #                     metavar='factor', 
+    #                     type=float, 
+    #                     nargs='?',
+    #                     default=0.9,
+    #                     help='The factor to reduce the result by to cut off the edge')
 
-    parser.add_argument('--searchwindow', 
-                        metavar=('long1', 'lat1', 'long2', 'lat2'), 
+    parser.add_argument('--centerpoint', 
+                        metavar=('long', 'lat'), 
                         type=float, 
-                        nargs=4,
-                        default=(153.0548787,-27.3607943,153.105812,-27.396514),
+                        nargs=2,
+                        default=(153.082638, -27.379901), #banyo
                         help='The window to search for properties')
+
+    parser.add_argument('--perimeterdist', 
+                        metavar='meters', 
+                        type=float, 
+                        nargs='?',
+                        default=5000,
+                        help='The distance to search around the centerpoint')
 
     parser.add_argument('--outputfilepath', 
                         metavar=('file path',), 
@@ -153,72 +113,88 @@ if __name__ == "__main__":
 
     parser.add_argument('--loadskip', 
                         metavar='level', 
-                        type=int, 
+                        type=str, 
                         nargs='?',
-                        default=0,
+                        default="",
                         help='Disable for running execfile')
 
-    parser.add_argument('--nthreads', 
-                        metavar='nthreads', 
-                        type=int, 
+    parser.add_argument('--alt',
+                        metavar='int',
+                        type=int,
                         nargs='?',
-                        default=128,
+                        default=0,
                         help='To debug')
 
-    # TODO: Take out of global namespace
+    parser.add_argument('--alt_truncated_output',
+                        metavar='path',
+                        type=str,
+                        nargs='?',
+                        default="data/truncated/banyo/shp",
+                        help='To debug')
+
+    # parser.add_argument('--nthreads', 
+    #                     metavar='nthreads', 
+    #                     type=int, 
+    #                     nargs='?',
+    #                     default=5,
+    #                     help='To debug')
+
+    # TODO: 2017-12-08 11:06:32 later: Take out of global namespace
     args = parser.parse_args()
+    debug = args.debug
 
-    if args.loadskip < 1:
+    if debug:
+        print "Parsed arguments: ", args
+    if args.loadskip != "read":
+        if debug:
+            print "Reading mapfile..."
         mapfile = gpd.read_file(args.mapfile)
-    mapfile["is_corner"] = 0
     
-    window = args.searchwindow
-    if args.loadskip < 2:
-        filteredmapfile = filter_by_coords(mapfile, *window)
+    mf = Mapfile(mapfile)
 
-    batch_size = len(filteredmapfile)/args.nthreads
-    
-    pool = Pool(processes=args.nthreads)
-    sequence = []
-    for i in range(args.nthreads):
-        sequence.append((i, filteredmapfile, batch_size, args.adjacentwidth))
+    # TODO: 2017-12-08 11:06:41 Verify that mf is successfully filtered
+    if debug:
+        print "Filtering down search scope around center point: ", args.centerpoint
+        print "Perimeter distance = ", args.perimeterdist
+    filter_search_scope(mf, args.centerpoint, args.perimeterdist)
 
-    result = pool.map(pcorner, sequence)
-    cleaned = [x for x in result if not x is None]
-    pool.close()
-    pool.join()
+    if args.alt == 1:
+        print "Alternate operation mode 1..."
+        filepath = args.alt_truncated_output + "/geo/"
+        mkdir_p(filepath)
+        filename = filepath + "out.shp"
+        mf.geo.to_file(driver='ESRI Shapefile',
+                       filename=filename)
+        print "Saved to " + filename
+        exit(0)
 
-    for res in cleaned:
-        filteredmapfile["is_corner"].loc[res.index] = res
+    # Sets mf.is_corner_series
+    if debug:
+        print "Marking corners..."
+    mf.mark_corners(DimensionCornerFinder(args.adjacentdist))
 
-    filteredmapfile = filter_by_area(filteredmapfile, args.minaream2, args.maxaream2)
-
-    print filteredmapfile[filteredmapfile["is_corner"] == True]
-    print sum(filteredmapfile["is_corner"])
-
-    for column in filteredmapfile:
-        if filteredmapfile[column].dtype == bool:
-            filteredmapfile[column] = filteredmapfile[column].astype(int)
-
-    # Filter by finalize factor
-    factor=args.finalizefilterfactor
-    if args.debug:
-        print("Final window: ", factor*window[0],factor*window[2], factor*window[1],factor*window[3])
-    #TODO: Fix this next line:
-    #filteredmapfile = filteredmapfile.cx[factor*window[0]:factor*window[2], factor*window[1]:factor*window[3]]
+    mf.geo["is_corner"] = mf.is_corner_series.astype(int)
 
     # Filter by plan
-    filteredmapfile = filter_by_plan(filteredmapfile)
+    if debug:
+        print "Filtering by plan..."
+    mf.filter_by_plan()
 
     # Filter by regularity
-    filteredmapfile = filter_by_regularity(filteredmapfile)
+    if debug:
+        print "Filtering by regularity..."
+    mf.filter_by_regularity()
 
-    mkdir_p(args.outputfilepath)
-    filteredmapfile.to_file(driver='ESRI Shapefile',filename=args.outputfilepath)
+    # Filter by area
+    if debug:
+        print "Filtering by area..."
+    mf.filter_by_area(args.minaream2, args.maxaream2)
 
+    # Only use corners
+    formatting_gpd = mf.geo[mf.is_corner_series == 1]
 
-#mapfile[(mapfile["PLAN"].str.contains("131902")) & (mapfile["LOT"] == u'210')].iloc[0].geometry.touches(mapfile[(mapfile["PLAN"].str.contains("131902")) & (mapfile["LOT"] == u'209')].iloc[0].geometry)
-
-#mapfile[(mapfile["PLAN"] == u'SP131902') & (mapfile["LOT"] == u'210')].iloc[0].geometry.touches(mapfile[(mapfile["PLAN"] == u'SP131902') & (mapfile["LOT"] == u'209')].iloc[0].geometry)
-
-# TODO: Test touches algorithm
+    # Generate webpage
+    
+    
+#     mkdir_p(args.outputfilepath) TODO later
+#     filteredmapfile.to_file(driver='ESRI Shapefile',filename=args.outputfilepath)

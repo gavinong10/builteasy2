@@ -1,0 +1,37 @@
+
+<table border="1" class="dataframe main">
+    <thead>
+        <tr style="text-align: right;">
+            <th></th>
+            <th>LOT</th>
+            <th>PLAN</th>
+            <th>CENT</th>
+            <th>EATLAS</th>
+            <th>GOOGLE</th>
+            <th>IMAGERENDER</th>
+            <th>SELECT</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for key, row in rows %}
+        <tr>
+            <th>{{ key }}</th>
+            <td>{{ row["LOT"] }}</td>
+            <td>{{ row["PLAN"] }}</td>
+            <td>{{ row["CENT"] }}</td>
+            <td>
+                <a href='{{ row["eatlas_link"] }}'>link</a>
+            </td>
+            <td>
+                <a href='{{ row["google_link"] }}'>link</a>
+            </td>
+            <td>
+                <img src='{{ row["google_static_link"] }}' height="200" width="200">
+            </td>
+            <td>
+                {{ form|attr("selectproperty" ~ key) }}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

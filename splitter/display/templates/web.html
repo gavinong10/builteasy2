@@ -1,0 +1,77 @@
+<!doctype html>
+<title>Simple tables</title>
+<style>
+    body {
+        font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    }
+
+    a,
+    h1,
+    h2 {
+        color: #377ba8;
+    }
+
+    h1,
+    h2 {
+        margin: 0;
+    }
+
+    h1 {
+        border-bottom: 2px solid #eee;
+    }
+
+    h2 {
+        font-size: 1.2em;
+    }
+
+    table.dataframe,
+    .dataframe th,
+    .dataframe td {
+        border: none;
+        border-bottom: 1px solid #C8C8C8;
+        border-collapse: collapse;
+        text-align: left;
+        padding: 10px;
+        margin-bottom: 40px;
+        font-size: 0.9em;
+    }
+
+    .main th {
+        background-color: #add8e6;
+        color: white;
+    }
+
+    tr:nth-child(odd) {
+        background-color: #eee;
+    }
+
+    tr:nth-child(even) {
+        background-color: #fff;
+    }
+
+    tr:hover {
+        background-color: #ffff99;
+    }
+</style>
+<div class=page>
+    {% with messages = get_flashed_messages() %} {% if messages %}
+    <ul>
+        {% for message in messages %}
+        <li>{{ message }} </li>
+        {% endfor %}
+    </ul>
+    {% endif %} {% endwith %}
+
+    <form action="" method="post" name="email">
+        {{ form.hidden_tag() }}
+        <h1>Corner Lots</h1>
+        <p>
+            Comma-separated email addresses:
+            <br> {{ form.emailsfield(size=80) }}
+            <input type="submit" value="Send">
+            <br>
+        </p>
+        {% include 'view.html' %}
+    </form>
+    <a href=/corners/{{idx + 1}}>Next >></a>
+</div>

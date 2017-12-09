@@ -11,6 +11,20 @@ if __name__ == "__main__":
                         default="data/boundaries_gdb/data.gdb",
                         help='The path to the mapfile data')
 
+    parser.add_argument('--centerpoint',
+                        metavar=('long', 'lat'),
+                        type=float,
+                        nargs=2,
+                        default=(153.082638, -27.379901),
+                        help='The window to search for properties')
+
+    parser.add_argument('--perimeterdist',
+                        metavar='meters',
+                        type=float,
+                        nargs='?',
+                        default=5000,
+                        help='The distance to search around the centerpoint')
+
     parser.add_argument('--outputfilepath', 
                         metavar=('file path',), 
                         type=str, 
@@ -30,6 +44,12 @@ if __name__ == "__main__":
                         nargs='?',
                         default=1000,
                         help='end index position')
+    parser.add_argument('--debug',
+                        metavar='debug',
+                        type=bool,
+                        nargs='?',
+                        default=False,
+                        help='To debug')
 
     args = parser.parse_args()
 
