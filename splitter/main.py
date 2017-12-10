@@ -3,7 +3,7 @@
 #import sys; sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--suburb', 'BANYO']; execfile('main.py')
 #import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--suburb', 'BANYO']; execfile('main.py')
 #import sys; sys.argv = ['', '--mapfile', 'data/bcc/shp/geo/out.shp', '--debug', 'True', '--nthreads', '72', '--suburb', 'BANYO']; execfile('main.py')
-
+#import sys; sys.argv = ['', '--mapfile', 'data/bcc/shp/geo/out.shp', '--debug', 'True', '--nthreads', '72']; execfile('main.py')
 
 #import sys; sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--suburb', 'BRISBANE CITY', '--perimeterdist', '30000', '--alt', '1', '--alt_truncated_output', 'data/bcc/shp']; execfile('main.py')
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
                         metavar="suburb name e.g. BANYO", 
                         type=str, 
                         nargs='?',
-                        default="BANYO", #banyo
+                        default="", #banyo
                         help='The suburb window centerpoint to search for properties')
 
     parser.add_argument('--perimeterdist', 
@@ -233,6 +233,8 @@ if __name__ == "__main__":
         finaloutputpath = folderpath + \
             datetime.datetime.now().strftime('%Y-%m-%d-%H-%M') + ".shp"
 
+        formatting_gpd.to_file(driver='ESRI Shapefile',
+                               filename=finaloutputpath)
     # Generate webpage
     
     
