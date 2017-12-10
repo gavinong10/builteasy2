@@ -207,4 +207,4 @@ if __name__ == "__main__":
     print "Serving..."
     app.config.from_object('config')
 
-    app.run(debug=True)
+    app.run()
