@@ -1,6 +1,7 @@
 #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True']
 #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
 #import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True']; execfile('main.py')
+#import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--nthreads', '12']; execfile('main.py')
 #sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
 
 import geopandas as gpd
@@ -101,7 +102,7 @@ if __name__ == "__main__":
                         metavar='minaream2', 
                         type=int, 
                         nargs='?',
-                        default=700,
+                        default=600,
                         help='area')
 
     parser.add_argument('--maxaream2', 
@@ -156,6 +157,8 @@ if __name__ == "__main__":
         if debug:
             print "Reading mapfile..."
         mapfile = gpd.read_file(args.mapfile)
+
+    mapfile = mapfile.iloc[:500]
     
     mf = Mapfile(mapfile)
 
@@ -197,8 +200,13 @@ if __name__ == "__main__":
         print "Filtering by area..."
     mf.filter_by_area(args.minaream2, args.maxaream2)
 
+    # Filter out the ends
+    if debug:
+        print "Filtering out the edges..."
+
     # Only use corners
     formatting_gpd = mf.geo[mf.is_corner_series == 1]
+
 
     # Generate webpage
     
