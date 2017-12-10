@@ -1,5 +1,6 @@
 #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True']
 #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
+#import sys; sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--suburb', 'BANYO']; execfile('main.py')
 #import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--suburb', 'BANYO']; execfile('main.py')
 #import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--nthreads', '72', '--suburb', 'BANYO']; execfile('main.py')
 #sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
@@ -175,7 +176,7 @@ if __name__ == "__main__":
         suburbs_to_process = suburbcoords
 
     for _, row in suburbcoords.iterrows():
-        centerpoint = row["Longitude"], row["Latitude"]
+        centerpoint = float(row["Longitude"]), float(row["Latitude"])
 
         mf = Mapfile(mapfile)
 
