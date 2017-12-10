@@ -69,7 +69,10 @@ class Mapfile(object):
         data = self.geo if geo else self.cart
         return data.to_crs(epsg=epsg)
 
-    def mark_corners(self, cornerfinder):
+    def mark_corners(self, cornerfinder, multithread=False, n_workers=4):
         cornerfinder.configure(self)
-        self.is_corner_series = cornerfinder.run()
+        if multithread:
+            self.is_corner_series = cornerfinder.run_multithread(n_workers)
+        else:
+            self.is_corner_series = cornerfinder.run()
         return self.is_corner_series

@@ -132,12 +132,19 @@ if __name__ == "__main__":
                         default="data/truncated/banyo/shp",
                         help='To debug')
 
-    # parser.add_argument('--nthreads', 
-    #                     metavar='nthreads', 
-    #                     type=int, 
-    #                     nargs='?',
-    #                     default=5,
-    #                     help='To debug')
+    parser.add_argument('--multithread',
+                        metavar='bool',
+                        type=bool,
+                        nargs='?',
+                        default=True,
+                        help='To multithread')
+
+    parser.add_argument('--nthreads', 
+                        metavar='nthreads', 
+                        type=int, 
+                        nargs='?',
+                        default=4,
+                        help='How many threads if multithreading')
 
     # TODO: 2017-12-08 11:06:32 later: Take out of global namespace
     args = parser.parse_args()
@@ -171,7 +178,7 @@ if __name__ == "__main__":
     # Sets mf.is_corner_series
     if debug:
         print "Marking corners..."
-    mf.mark_corners(DimensionCornerFinder(args.adjacentdist))
+    mf.mark_corners(DimensionCornerFinder(args.adjacentdist), args.multithread, args.nthreads)
 
     mf.geo["is_corner"] = mf.is_corner_series.astype(int)
 
