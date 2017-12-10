@@ -174,7 +174,7 @@ if __name__ == "__main__":
     else:
         suburbs_to_process = suburbcoords
 
-    for row in suburbcoords.iterrows():
+    for _, row in suburbcoords.iterrows():
         centerpoint = row["Longitude"], row["Latitude"]
 
         mf = Mapfile(mapfile)
