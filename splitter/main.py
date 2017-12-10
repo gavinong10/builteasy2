@@ -1,7 +1,7 @@
 #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True']
 #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
-#import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True']; execfile('main.py')
-#import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--nthreads', '12']; execfile('main.py')
+#import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--suburb', 'BANYO']; execfile('main.py')
+#import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--nthreads', '72', '--suburb', 'BANYO']; execfile('main.py')
 #sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
 
 import geopandas as gpd
@@ -70,25 +70,25 @@ if __name__ == "__main__":
     #                     default=0.9,
     #                     help='The factor to reduce the result by to cut off the edge')
 
-    parser.add_argument('--centerpoint', 
-                        metavar=('long', 'lat'), 
-                        type=float, 
-                        nargs=2,
-                        default=(153.082638, -27.379901), #banyo
-                        help='The window to search for properties')
+    parser.add_argument('--suburb', 
+                        metavar="suburb name e.g. BANYO", 
+                        type=str, 
+                        nargs='?',
+                        default="BANYO", #banyo
+                        help='The suburb window centerpoint to search for properties')
 
     parser.add_argument('--perimeterdist', 
                         metavar='meters', 
                         type=float, 
                         nargs='?',
-                        default=5000,
+                        default=7000,
                         help='The distance to search around the centerpoint')
 
     parser.add_argument('--outputfilepath', 
                         metavar=('file path',), 
                         type=str, 
                         nargs="?",
-                        default="data/output/" + datetime.datetime.now().strftime('%Y-%m-%d-%H-%M'),
+                        default="data/output/",
                         help='The output path to the mapfile data')    
 
     parser.add_argument('--debug', 
@@ -147,6 +147,13 @@ if __name__ == "__main__":
                         default=4,
                         help='How many threads if multithreading')
 
+    parser.add_argument('--suburbcoordsfile',
+                        metavar='path',
+                        type=str,
+                        nargs='?',
+                        default="../geocoding/data/suburb_coordinates_bcc.csv",
+                        help='Where to get suburb geocoordinates')
+
     # TODO: 2017-12-08 11:06:32 later: Take out of global namespace
     args = parser.parse_args()
     debug = args.debug
@@ -158,55 +165,68 @@ if __name__ == "__main__":
             print "Reading mapfile..."
         mapfile = gpd.read_file(args.mapfile)
 
-    mapfile = mapfile.iloc[:500]
-    
-    mf = Mapfile(mapfile)
+    suburbcoords = pd.read_csv(args.suburbcoordsfile)
+    suburbs_to_process = []
 
-    # TODO: 2017-12-08 11:06:41 Verify that mf is successfully filtered
-    if debug:
-        print "Filtering down search scope around center point: ", args.centerpoint
-        print "Perimeter distance = ", args.perimeterdist
-    filter_search_scope(mf, args.centerpoint, args.perimeterdist)
+    if args.suburb != "":
+        suburbs_to_process = suburbcoords[suburbcoords["Suburb"]
+                                          == args.suburb]
+    else:
+        suburbs_to_process = suburbcoords
 
-    if args.alt == 1:
-        print "Alternate operation mode 1..."
-        filepath = args.alt_truncated_output + "/geo/"
-        mkdir_p(filepath)
-        filename = filepath + "out.shp"
-        mf.geo.to_file(driver='ESRI Shapefile',
-                       filename=filename)
-        print "Saved to " + filename
-        exit(0)
+    for row in suburbcoords.iterrows():
+        centerpoint = row["Longitude"], row["Latitude"]
 
-    # Sets mf.is_corner_series
-    if debug:
-        print "Marking corners..."
-    mf.mark_corners(DimensionCornerFinder(args.adjacentdist), args.multithread, args.nthreads)
+        mf = Mapfile(mapfile)
 
-    mf.geo["is_corner"] = mf.is_corner_series.astype(int)
+        # TODO: 2017-12-08 11:06:41 Verify that mf is successfully filtered
+        if debug:
+            print "Filtering down search scope around center point: ", centerpoint
+            print "Perimeter distance = ", args.perimeterdist
+        filter_search_scope(mf, centerpoint, args.perimeterdist)
 
-    # Filter by plan
-    if debug:
-        print "Filtering by plan..."
-    mf.filter_by_plan()
+        if args.alt == 1:
+            print "Alternate operation mode 1..."
+            filepath = args.alt_truncated_output + "/geo/"
+            mkdir_p(filepath)
+            filename = filepath + "out.shp"
+            mf.geo.to_file(driver='ESRI Shapefile',
+                        filename=filename)
+            print "Saved to " + filename
+            exit(0)
 
-    # Filter by regularity
-    if debug:
-        print "Filtering by regularity..."
-    mf.filter_by_regularity()
+        # Sets mf.is_corner_series
+        if debug:
+            print "Marking corners..."
+        mf.mark_corners(DimensionCornerFinder(args.adjacentdist), args.multithread, args.nthreads)
 
-    # Filter by area
-    if debug:
-        print "Filtering by area..."
-    mf.filter_by_area(args.minaream2, args.maxaream2)
+        mf.geo["is_corner"] = mf.is_corner_series.astype(int)
 
-    # Filter out the ends
-    if debug:
-        print "Filtering out the edges..."
+        # Filter by plan
+        if debug:
+            print "Filtering by plan..."
+        mf.filter_by_plan()
 
-    # Only use corners
-    formatting_gpd = mf.geo[mf.is_corner_series == 1]
+        # Filter by regularity
+        if debug:
+            print "Filtering by regularity..."
+        mf.filter_by_regularity()
 
+        # Filter by area
+        if debug:
+            print "Filtering by area..."
+        mf.filter_by_area(args.minaream2, args.maxaream2)
+
+        # Filter out the ends
+        if debug:
+            print "Filtering out the edges (TODO)..."
+
+        # Only use corners
+        formatting_gpd = mf.geo[mf.is_corner_series == 1]
+        folderpath = args.outputfilepath + row["Suburb"] + "/"
+        mkdir_p(folderpath)
+        finaloutputpath = folderpath + \
+            datetime.datetime.now().strftime('%Y-%m-%d-%H-%M') + ".shp"
 
     # Generate webpage
     
