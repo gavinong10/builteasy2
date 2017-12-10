@@ -5,7 +5,7 @@
 #import sys; sys.argv = ['', '--mapfile', 'data/bcc/shp/geo/out.shp', '--debug', 'True', '--nthreads', '72', '--suburb', 'BANYO']; execfile('main.py')
 
 
-#import sys; sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--suburb', 'BRISBANE CITY', '--perimeterdist', '30', '--alt', '1', '--alt_truncated_output', 'data/bcc/shp']; execfile('main.py')
+#import sys; sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--suburb', 'BRISBANE CITY', '--perimeterdist', '30000', '--alt', '1', '--alt_truncated_output', 'data/bcc/shp']; execfile('main.py')
 
 #sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
 
