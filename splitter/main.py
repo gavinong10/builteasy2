@@ -2,7 +2,11 @@
 #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
 #import sys; sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--suburb', 'BANYO']; execfile('main.py')
 #import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--suburb', 'BANYO']; execfile('main.py')
-#import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--nthreads', '72', '--suburb', 'BANYO']; execfile('main.py')
+#import sys; sys.argv = ['', '--mapfile', 'data/bcc/shp/geo/out.shp', '--debug', 'True', '--nthreads', '72', '--suburb', 'BANYO']; execfile('main.py')
+
+
+#import sys; sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--suburb', 'BRISBANE CITY', '--perimeterdist', '30', '--alt', '1', '--alt_truncated_output', 'data/bcc/shp']; execfile('main.py')
+
 #sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
 
 import geopandas as gpd
@@ -175,7 +179,7 @@ if __name__ == "__main__":
     else:
         suburbs_to_process = suburbcoords
 
-    for _, row in suburbcoords.iterrows():
+    for _, row in suburbs_to_process.iterrows():
         centerpoint = float(row["Longitude"]), float(row["Latitude"])
 
         mf = Mapfile(mapfile)
