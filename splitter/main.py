@@ -173,16 +173,16 @@ if __name__ == "__main__":
     suburbcoords = pd.read_csv(args.suburbcoordsfile)
     suburbs_to_process = []
 
-    if args.suburb != "":
-        suburbs_to_process = suburbcoords[suburbcoords["Suburb"]
-                                          == args.suburb]
+    if args.suburb == "":
+        suburbs_to_process = suburbcoords
     elif args.suburb[-1] == ":":
-        # Process everything after this marker, inclusive
+         # Process everything after this marker, inclusive
         idx = suburbcoords[suburbcoords["Suburb"]
                            == args.suburb[:-1]].index
         suburbs_to_process = suburbcoords.loc[idx:]
     else:
-        suburbs_to_process = suburbcoords
+        suburbs_to_process = suburbcoords[suburbcoords["Suburb"]
+                                          == args.suburb]
 
     for _, row in suburbs_to_process.iterrows():
         centerpoint = float(row["Longitude"]), float(row["Latitude"])
