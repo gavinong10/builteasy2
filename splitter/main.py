@@ -178,7 +178,7 @@ if __name__ == "__main__":
     elif args.suburb[-1] == ":":
          # Process everything after this marker, inclusive
         idx = suburbcoords[suburbcoords["Suburb"]
-                           == args.suburb[:-1]].index
+                           == args.suburb[:-1]].index[0]
         suburbs_to_process = suburbcoords.loc[idx:]
     else:
         suburbs_to_process = suburbcoords[suburbcoords["Suburb"]
