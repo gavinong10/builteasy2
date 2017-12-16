@@ -2,8 +2,8 @@
 #sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--alt', '1']
 #import sys; sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--suburb', 'BANYO']; execfile('main.py')
 #import sys; sys.argv = ['', '--mapfile', 'data/truncated/banyo/shp/geo/out.shp', '--debug', 'True', '--suburb', 'BANYO']; execfile('main.py')
-#import sys; sys.argv = ['', '--mapfile', 'data/bcc/shp/geo/out.shp', '--debug', 'True', '--nthreads', '72', '--suburb', 'BANYO']; execfile('main.py')
-#import sys; sys.argv = ['', '--mapfile', 'data/bcc/shp/geo/out.shp', '--debug', 'True', '--nthreads', '72', '--suburb', '']; execfile('main.py')
+#import sys; sys.argv = ['', '--mapfile', 'data/bcc/shp/geo/out.shp', '--debug', 'True', '--nthreads', '36', '--suburb', 'BANYO']; execfile('main.py')
+#import sys; sys.argv = ['', '--mapfile', 'data/bcc/shp/geo/out.shp', '--debug', 'True', '--nthreads', '36', '--suburb', 'BROOKFIELD:']; execfile('main.py')
 
 #import sys; sys.argv = ['', '--mapfile', 'data/boundaries_shp/Property_boundaries___DCDB_Lite.shp', '--debug', 'True', '--suburb', 'BRISBANE CITY', '--perimeterdist', '30000', '--alt', '1', '--alt_truncated_output', 'data/bcc/shp']; execfile('main.py')
 
@@ -176,6 +176,11 @@ if __name__ == "__main__":
     if args.suburb != "":
         suburbs_to_process = suburbcoords[suburbcoords["Suburb"]
                                           == args.suburb]
+    elif args.suburb[-1] == ":":
+        # Process everything after this marker, inclusive
+        idx = suburbcoords[suburbcoords["Suburb"]
+                           == args.suburb[:-1]].index
+        suburbs_to_process = suburbcoords.loc[idx:]
     else:
         suburbs_to_process = suburbcoords
 
