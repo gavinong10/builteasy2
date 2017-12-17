@@ -1,6 +1,5 @@
 
 from urlparse import urlparse, urljoin
-
 import linker.eatlas as eatlas
 import linker.google as google
 from flask import Flask, render_template, redirect, flash, jsonify, request, url_for, redirect
@@ -17,12 +16,12 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from functools import wraps
 from flask import request, Response
 
-
 def check_auth(username, password):
     """This function is called to check if a username /
     password combination is valid.
     """
-    return username == 'admin' and password == 'BuiltEasy123!'
+    return True
+    #return username == 'admin' and password == 'BuiltEasy123!'
 
 
 def authenticate():
@@ -49,6 +48,13 @@ env = Environment(
 
 app = Flask(__name__)
 global gpdfs
+
+gpdfs = {}
+
+app.config.update(dict(
+    SECRET_KEY="powerful secretkey",
+    WTF_CSRF_SECRET_KEY="a csrf secret key"
+))
 
 # class SelectorForm(Form):
 #     suburbfield = SelectField(u'Suburb')
@@ -104,7 +110,7 @@ def format_gpdf(gpdf, idx=0, items=20):
     return display_gpdf
 
 def get_files_by_suburb():
-    shp_files = [y for x in os.walk("../data/output/")
+    shp_files = [y for x in os.walk(os.path.dirname(os.path.realpath(__file__)) + "/" + "../data/output/")
                  for y in glob(os.path.join(x[0], '*.shp'))]
 
     #Filter to make sure there is a correct number of subdirectories
@@ -126,8 +132,8 @@ def show_corner_options():
     pass
     
 
+#@requires_auth
 @app.route("/", methods=['GET', 'POST'])
-@requires_auth
 def return_suburbs():
     files_dict = get_files_by_suburb()
     form=SuburbForm()
@@ -142,7 +148,7 @@ def return_suburbs():
 
 
 @app.route("/files/<suburb>", methods=['GET', 'POST'])
-@requires_auth
+#@requires_auth
 def return_files_in_suburb(suburb):
     form = FileSelectorForm()
     files_dict = get_files_by_suburb()
@@ -154,7 +160,7 @@ def return_files_in_suburb(suburb):
     return render_template('files.html', form=form)
 
 @app.route("/corners/<suburb>/<filename>/<int:page_no>", methods=['GET', 'POST'])
-@requires_auth
+#@requires_auth
 def show_tables(suburb, filename, page_no):
     suburbfilename=suburb + filename
     if suburbfilename not in gpdfs:
