@@ -164,7 +164,8 @@ def return_files_in_suburb(suburb):
 def show_tables(suburb, filename, page_no):
     suburbfilename=suburb + filename
     if suburbfilename not in gpdfs:
-        gpdfs[suburbfilename].read_file('../data/output/' + suburb + '/' + filename)
+        gpdfs[suburbfilename].read_file(os.path.dirname(os.path.realpath(
+            __file__)) + '../data/output/' + suburb + '/' + filename)
 
     gpdf = gpdfs[suburbfilename]
     display_gpdf = format_gpdf(gpdf, page_no)
