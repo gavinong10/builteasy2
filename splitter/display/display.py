@@ -156,7 +156,7 @@ def return_files_in_suburb(suburb):
     if form.validate_on_submit():
         # do something with the form data here
 
-        return redirect('/corners/' + suburb + '/' + form.filefield.data)
+        return redirect('/corners/' + suburb + '/' + form.filefield.data+ "/0")
     return render_template('files.html', form=form)
 
 @app.route("/corners/<suburb>/<filename>/<int:page_no>", methods=['GET', 'POST'])
@@ -164,8 +164,8 @@ def return_files_in_suburb(suburb):
 def show_tables(suburb, filename, page_no):
     suburbfilename=suburb + filename
     if suburbfilename not in gpdfs:
-        gpdfs[suburbfilename].read_file(os.path.dirname(os.path.realpath(
-            __file__)) + '../data/output/' + suburb + '/' + filename)
+        gpdfs[suburbfilename] = gpd.read_file(os.path.dirname(os.path.realpath(
+            __file__)) + '/../data/output/' + suburb + '/' + filename)
 
     gpdf = gpdfs[suburbfilename]
     display_gpdf = format_gpdf(gpdf, page_no)
@@ -210,7 +210,6 @@ if __name__ == "__main__":
 
     # args = parser.parse_args()
     # print "Args: ", args
-    gpdfs = {}
     print "Serving..."
     app.config.from_object('config')
 
