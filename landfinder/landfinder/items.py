@@ -11,3 +11,5 @@ class LandfinderItem(scrapy.Item):
     listing_name = scrapy.Field()
     listing_url = scrapy.Field()
     listing_html = scrapy.Field()
+    search_url = scrapy.Field()
+    postcode = scrapy.Field()

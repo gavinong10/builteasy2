@@ -10,7 +10,7 @@ import datetime
 from pytz import timezone
 import pymongo
 from pymodm import connect
-from schemas import ListingResult, Listing
+from schemas import ListingId, ListingResult, Listing
 class LandfinderPipeline(object):
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
@@ -45,15 +45,21 @@ class LandfinderPipeline(object):
         # TODO: Incorporate $currentDate	
         
         index = {
-            'listing_url': item["listing_url"],
-            'search_id': self.scraper_type
+            '_id': {
+                'listing_url': item["listing_url"],
+                'search_id': self.scraper_type
+            }
         }
+        listingId = ListingId(
+            **index["_id"]
+        )
 
         listingRes = ListingResult(
             date_discovered=datetime.datetime.now(
                 timezone("Australia/Brisbane")),
             listing_name=item["listing_name"],
-            listing_html=item["listing_html"]
+            listing_html=item["listing_html"],
+            search_url=item["search_url"]
         )
         
         try:
@@ -64,16 +70,16 @@ class LandfinderPipeline(object):
                 #iterations
                 listing.update(
                     index,
-                    {'$push': listingRes }
+                    {'$addToSet': listingRes}
                 )
 
             # If yes, then do a 
         except Listing.DoesNotExist:
             # Handle Listing not existing.
+            listingRes.save()
             Listing(
-                listing_url=item["listing_url"],
-                search_id=self.scraper_type,
-                iterations=[listingRes]
+                _id=listingId,
+                iterations=[listingRes],
+                postcode=item["postcode"]
             ).save()
-    
     

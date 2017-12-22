@@ -19,7 +19,7 @@ Brisbane Inner North,Hendra,4011,QLD
 Brisbane Inner North,Herston,4006,QLD
 Brisbane Inner North,Kelvin Grove,4059,QLD
 Brisbane Inner North,Milton,4064,QLD
-Brisbane Inner North,Newfarm,4005,QLD
+Brisbane Inner North,New Farm,4005,QLD
 Brisbane Inner North,Newmarket,4051,QLD
 Brisbane Inner North,Newstead,4006,QLD
 Brisbane Inner North,Paddington,4064,QLD
@@ -33,7 +33,7 @@ Brisbane North,Alderley,4051,QLD
 Brisbane North,Chermside,4032,QLD
 Brisbane North,Chermside West,4032,QLD
 Brisbane North,Enoggera,4051,QLD
-Brisbane North,Everton Hills,4520,QLD
+Brisbane North,Everton Hills,4053,QLD
 Brisbane North,Everton Park,4053,QLD
 Brisbane North,Ferny Grove,4055,QLD
 Brisbane North,Gaythorne,4051,QLD
@@ -82,7 +82,7 @@ Brisbane Outer West,Kenmore Hills,4069,QLD
 Brisbane Outer West,Kholo,4306,QLD
 Brisbane Outer West,Lake Manchester,4306,QLD
 Brisbane Outer West,Moggill,4070,QLD
-Brisbane Outer West,Mount Cootha,4066,QLD
+Brisbane Outer West,Mount Coot-tha,4066,QLD
 Brisbane Outer West,Mount Crosby,4306,QLD
 Brisbane Outer West,Pinjarra Hills,4069,QLD
 Brisbane Outer West,Pullenvale,4069,QLD
@@ -92,7 +92,7 @@ Brisbane South West,Sherwood,4075,QLD
 Brisbane South West,Corinda,4075,QLD
 Brisbane South West,Oxley,4075,QLD
 Brisbane South West,Seventeen Mile Rocks,4073,QLD
-Brisbane South West,Cinnamon Park,4306,QLD
+Brisbane South West,Sinnamon Park,4073,QLD
 Brisbane South West,Jindalee,4074,QLD
 Brisbane South West,Mount Ommaney,4074,QLD
 Brisbane South West,Westlake,4074,QLD
@@ -107,9 +107,9 @@ Brisbane Outer South West,Heathwood,4110,QLD
 Brisbane Outer South West,Inala,4077,QLD
 Brisbane Outer South West,Larapinta,4110,QLD
 Brisbane Outer South West,Oxley,4075,QLD
-Brisbane Outer South West,Pullara,4178,QLD
+Brisbane Outer South West,Pallara,4110,QLD
 Brisbane Outer South West,Richlands,4077,QLD
-Brisbane Outer South West,River Hills,4077,QLD
+Brisbane Outer South West,Riverhills,4074,QLD
 Brisbane Outer South West,Rocklea,4106,QLD
 Brisbane Outer South West,Sumner,4074,QLD
 Brisbane Outer South West,Wacol,4076,QLD
@@ -135,7 +135,7 @@ Brisbane South,Coopers Plains,4108,QLD
 Brisbane South,Holland Park,4121,QLD
 Brisbane South,Holland Park West,4121,QLD
 Brisbane South,Mackenzie,4156,QLD
-Brisbane South,Magregor,4156,QLD
+Brisbane South,Macgregor,4109,QLD
 Brisbane South,Mansfield,4122,QLD
 Brisbane South,Moorooka,4105,QLD
 Brisbane South,Mount Gravatt,4122,QLD
@@ -159,7 +159,7 @@ Brisbane Outer South,Runcorn,4113,QLD
 Brisbane Outer South,Stretton,4116,QLD
 Brisbane Outer South,Sunnybank,4109,QLD
 Brisbane Outer South,Sunnybank Hills,4109,QLD
-Brisbane Outer South,Underwood,4066,QLD
+Brisbane Outer South,Underwood,4112,QLD
 Brisbane Inner East,Balmoral,4171,QLD
 Brisbane Inner East,Bulimba,4171,QLD
 Brisbane Inner East,Camp Hill,4152,QLD
@@ -189,40 +189,40 @@ Brisbane Outer East,Ransome,4154,QLD
 Brisbane Outer East,Wakerley,4154,QLD
 Brisbane Outer East,Wynnum,4178,QLD
 Brisbane Outer East,Wynnum West,4178,QLD
-Redlands Bayside,Alexandra Hills,4051,QLD
-Redlands Bayside,Birkdale,4153,QLD
-Redlands Bayside,Capalaba,4170,QLD
-Redlands Bayside,Cleveland,4011,QLD
-Redlands Bayside,Mount Cotton,4066,QLD
-Redlands Bayside,Ormiston,4012,QLD
-Redlands Bayside,Redland Bay,4059,QLD
-Redlands Bayside,Sheldon,4073,QLD
-Redlands Bayside,Thorneside,4061,QLD
-Redlands Bayside,Thornlands,4061,QLD
-Redlands Bayside,Victoria Point,4122,QLD
-Redlands Bayside,Wellington Point,4012,QLD
-Moreton South,Albany Creek,4110,QLD
-Moreton South,Murrumba Downs,4172,QLD
-Moreton South,Mango Hill,4156,QLD
-Moreton South,Griffin,4120,QLD
-Moreton South,Warner,4154,QLD
-Moreton South,Kallangur,4030,QLD
-Moreton South,Dakabin,4025,QLD
-Moreton Bayside,Redcliffe,4059,QLD
-Moreton Bayside,Scarborough,4017,QLD
-Moreton Bayside,Newport,4051,QLD
-Moreton Bayside,Woody Point,4122,QLD
-Moreton Bayside,Clontarf,4011,QLD
-Moreton Bayside,Kippa-Ring,4306,QLD
-Moreton Bayside,Margate,4122,QLD
-Moreton Bayside,Bray Park,4017,QLD
-Ipswich Council,Augustine Heights,4066,QLD
-Ipswich Council,Redbank Plains,4059,QLD
-Sunshine Coast,Birtinya,4153,QLD
+Redlands Bayside,Alexandra Hills,4161,QLD
+Redlands Bayside,Birkdale,4159,QLD
+Redlands Bayside,Capalaba,4157,QLD
+Redlands Bayside,Cleveland,4163,QLD
+Redlands Bayside,Mount Cotton,4165,QLD
+Redlands Bayside,Ormiston,4160,QLD
+Redlands Bayside,Redland Bay,4165,QLD
+Redlands Bayside,Sheldon,4157,QLD
+Redlands Bayside,Thorneside,4158,QLD
+Redlands Bayside,Thornlands,4164,QLD
+Redlands Bayside,Victoria Point,4165,QLD
+Redlands Bayside,Wellington Point,4160,QLD
+Moreton South,Albany Creek,4035,QLD
+Moreton South,Murrumba Downs,4503,QLD
+Moreton South,Mango Hill,4509,QLD
+Moreton South,Griffin,4503,QLD
+Moreton South,Warner,4500,QLD
+Moreton South,Kallangur,4503,QLD
+Moreton South,Dakabin,4503,QLD
+Moreton Bayside,Redcliffe,4020,QLD
+Moreton Bayside,Scarborough,4020,QLD
+Moreton Bayside,Newport,4020,QLD
+Moreton Bayside,Woody Point,4019,QLD
+Moreton Bayside,Clontarf,4019,QLD
+Moreton Bayside,Kippa-Ring,4021,QLD
+Moreton Bayside,Margate,4019,QLD
+Moreton Bayside,Bray Park,4500,QLD
+Ipswich Council,Augustine Heights,4300,QLD
+Ipswich Council,Redbank Plains,4301,QLD
+Sunshine Coast,Birtinya,4575,QLD
 Logan East,Rochedale South,4123,QLD
-Logan East,Cornubia,4075,QLD
-Logan East,Daisy Hill,4025,QLD
-Logan East,Shailer Park,4073,QLD
-Logan East,Eagleby,4009,QLD
-Logan West,Loganlea,4110,QLD
-Logan West,Marsden,4122,QLD
+Logan East,Cornubia,4130,QLD
+Logan East,Daisy Hill,4127,QLD
+Logan East,Shailer Park,4128,QLD
+Logan East,Eagleby,4207,QLD
+Logan West,Loganlea,4131,QLD
+Logan West,Marsden,4132,QLD

@@ -4,6 +4,7 @@ import scrapy
 from landfinder.items import LandfinderItem
 import pandas as pd
 import os
+import re
 
 # https://www.realestate.com.au/buy/property-land-in-kuraby%2c+qld+4112/list-1?includeSurrounding=false&persistIncludeSurrounding=true&misc=ex-under-contract&source=location-search
 # https://www.realestate.com.au/buy/property-land-in-pimpama,+qld+4209/list-1?activeSort=list-date&misc=ex-under-contract&includeSurrounding=false
@@ -11,7 +12,7 @@ import os
 
 def read_df(): #TODO
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    df = pd.read_csv(dir_path + "/inputs/landsearchlist.csv")
+    df = pd.read_csv(dir_path + "/../inputs/landsearchlist.csv")
     print df.head()
     return df
 
@@ -35,7 +36,9 @@ params = urllib.urlencode(params)
 class LandListingsSpider(scrapy.Spider):
     name = "Landfinder"
     page = 1
-    start_urls = ["https://www.realestate.com.au/buy/property-land-in-%s%%2c+%s+%s%%3b/list-%d?%s" % (row["Suburb"], row["State"], row["Postcode"], page, params) for _, row in df.iterrows()]
+    # start_urls = ["https://www.realestate.com.au/buy/property-land-in-%s%%2c+%s+%s%%3b/list-%d?%s" % (row["Suburb"], row["State"], row["Postcode"], page, params) for _, row in df.iterrows()]
+    start_urls = ["https://www.realestate.com.au/buy/property-land-in-%s+%s%%3b/list-%d?%s" %
+                  (row["State"], row["Postcode"], page, params) for _, row in df.iterrows()]
     
     def parse(self, response):
         listings = response.xpath(
@@ -46,12 +49,15 @@ class LandListingsSpider(scrapy.Spider):
                     "//*[@rel='listingName']/@href").extract()
         listing_htmls = listings.xpath(
                     "//*[@rel='listingName']//ancestor::article").extract()
+        postcode = re.search(r"qld\+(\d{4})", response.url).group(1)
 
         for i in range(len(listings)):
             item = LandfinderItem(
                 listing_name=listing_names[i],
                 listing_url=listing_urls[i],
                 listing_html=listing_htmls[i],
+                search_url=response.url,
+                postcode=postcode
             )
             yield item
 

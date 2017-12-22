@@ -7,16 +7,25 @@ from pymodm import connect, fields, MongoModel, EmbeddedMongoModel
 # PyMongo. Make sure also to specify a database in the connection string:
 # connect('mongodb://localhost:27017/myApp')
 
-class ListingResult(EmbeddedMongoModel):
+class ListingId(EmbeddedMongoModel):
+    listing_url = fields.CharField()
+    search_id = fields.CharField()
+
+
+class ListingResult(MongoModel):
     date_discovered = fields.DateTimeField()
     listing_name = fields.CharField()
     listing_html = fields.CharField()
     mail = fields.ListField(fields.CharField())
+    search_url = fields.CharField()
+    class Meta:
+        collection_name = "listing_results_realestate_com_au"
 
 class Listing(MongoModel):
-    listing_url = fields.CharField(primary_key=True)
-    search_id = fields.CharField()
-    iterations=fields.EmbeddedDocumentListField(ListingResult)
+    _id = fields.EmbeddedDocumentField(
+        ListingId, primary_key=True)
+    iterations = fields.ListField(fields.ReferenceField(ListingResult))
+    postcode = fields.CharField()
     class Meta:
         collection_name = "listings_realestate_com_au"
 
