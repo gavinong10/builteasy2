@@ -88,7 +88,7 @@ def generate_html(mongo_entries, mailer):
             listing_htmls.append(iteration["listing_html"])
     
     # TODO: Generate the html email in jinja2
-    email_html = "<br />\n".join(listing_htmls)
+    email_html = "<br />\n<p>##############</p><br />".join(listing_htmls)
 
     # zip(listing_names, date_discovereds, listing_htmls)
     return email_html, affected_entries
