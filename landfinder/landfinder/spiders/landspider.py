@@ -36,11 +36,6 @@ class LandListingsSpider(scrapy.Spider):
     name = "Landfinder"
     page = 1
     start_urls = ["https://www.realestate.com.au/buy/property-land-in-%s%%2c+%s+%s%%3b/list-%d?%s" % (row["Suburb"], row["State"], row["Postcode"], page, params) for _, row in df.iterrows()]
-
-    custom_settings = {
-        'MONGODB_URI': 'mongodb://localhost:27017',
-        'MONGODB_DATABASE': 'builteasy'
-    }
     
     def parse(self, response):
         listings = response.xpath(

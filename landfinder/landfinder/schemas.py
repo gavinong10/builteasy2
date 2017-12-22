@@ -11,11 +11,10 @@ class ListingResult(EmbeddedMongoModel):
     date_discovered = fields.DateTimeField()
     listing_name = fields.CharField()
     listing_html = fields.CharField()
-    version = fields.IntegerField
-    mail=fields.ListField(fields.CharField())
+    mail = fields.ListField(fields.CharField())
 
 class Listing(MongoModel):
-    listing_url = fields.URLField(primary_key=True)
+    listing_url = fields.CharField(primary_key=True)
     search_id = fields.CharField()
     iterations=fields.EmbeddedDocumentListField(ListingResult)
     class Meta:
