@@ -89,6 +89,7 @@ def generate_html(mongo_entries, mailer):
     
     # TODO: Generate the html email in jinja2
     email_html = "<br />\n<p>##############</p><br />".join(listing_htmls)
+    email_html.replace('href="/', 'href="http://www.realestate.com.au/'
 
     # zip(listing_names, date_discovereds, listing_htmls)
     return email_html, affected_entries
