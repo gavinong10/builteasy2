@@ -31,9 +31,11 @@ pytz==2017.3
 queuelib==1.4.2
 s3transfer==0.1.12
 Scrapy==1.4.0
+scrapy-rotating-proxies==0.5
 service-identity==17.0.0
 six==1.11.0
 Twisted==17.9.0
+typing==3.6.2
 w3lib==1.18.0
 yagmail==0.10.209
 zope.interface==4.4.3
