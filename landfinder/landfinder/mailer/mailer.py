@@ -15,7 +15,7 @@ import pymongo
 # - If not, then update the field with an append and extract the html and append it to a dict containing the region
 # - Send emails to all recipients with email subject title organized by region
 
-RECIPIENTS = ["gavin.ong@builteasy.com.au", "morgan@builteasy.com.au", "miran@builteasy.com.au", "gavin@builteasy.com.au"]
+RECIPIENTS = ["gavin.ong@builteasy.com.au"] #, "morgan@builteasy.com.au", "miran@builteasy.com.au", "gavin@builteasy.com.au"]
 
 from pymongo import MongoClient
 client = MongoClient(MONGODB_URI + '/')
