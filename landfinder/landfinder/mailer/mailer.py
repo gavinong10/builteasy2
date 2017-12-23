@@ -15,7 +15,7 @@ import pymongo
 # - If not, then update the field with an append and extract the html and append it to a dict containing the region
 # - Send emails to all recipients with email subject title organized by region
 
-RECIPIENTS = ["gavin.ong@builteasy.com.au", "morgan@builteasy.com.au", "miran@builteasy.com.au", "gavin@builteasy.com.au"]
+RECIPIENTS = ["gavin.ong@builteasy.com.au"] #, "morgan@builteasy.com.au", "miran@builteasy.com.au", "gavin@builteasy.com.au"]
 
 from pymongo import MongoClient
 client = MongoClient(MONGODB_URI + '/')
@@ -99,7 +99,18 @@ def update_db(changed_result_entries, mailer):
     # For each of the entries, update the 'mail' set to include this mailer
     for entry in changed_result_entries:
         entry["mail"] = entry.get("mail", []) + [mailer]
-        ListingResult(**{ k: entry[k] for k in entry.keys() if k == '_id' or (k[0] != "_")}).save()
+
+        res_collection.update(
+            {
+                '_id': entry["_id"]
+            },
+            { 
+                "$addToSet": 
+                    { 
+                        "mail": mailer
+                    }
+            })
+
 
 def send_email(recipients, subject, html):
     yag = yagmail.SMTP(

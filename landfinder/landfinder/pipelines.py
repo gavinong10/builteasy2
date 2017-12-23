@@ -11,10 +11,15 @@ from pytz import timezone
 import pymongo
 from pymodm import connect
 from schemas import ListingId, ListingResult, Listing
+import re
 class LandfinderPipeline(object):
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
         self.mongo_db = mongo_db
+
+    @staticmethod
+    def censor_html_links(html):
+        return re.sub(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", "", html)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -64,14 +69,21 @@ class LandfinderPipeline(object):
         
         try:
             listing = Listing.objects.get(index)
-
+            # print "#########"
+            # print listing.iterations
+            # exit(1)
             # Check if html has changed
-            if listing["iterations"][-1]["listing_html"] != item["listing_html"]:
+
+            
+
+            if self.censor_html_links(listing.iterations[-1].listing_html) != \
+                    self.censor_html_links(item["listing_html"]):
                 #iterations
-                listing.update(
-                    index,
-                    {'$addToSet': listingRes}
-                )
+                listing.update({
+                    "iterations": {
+                        '$addToSet': listingRes
+                        }
+                })
 
             # If yes, then do a 
         except Listing.DoesNotExist:

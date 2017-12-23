@@ -11,6 +11,9 @@ class ListingId(EmbeddedMongoModel):
     listing_url = fields.CharField()
     search_id = fields.CharField()
 
+    class Meta:
+        final = True
+
 
 class ListingResult(MongoModel):
     date_discovered = fields.DateTimeField()
@@ -20,6 +23,7 @@ class ListingResult(MongoModel):
     search_url = fields.CharField()
     class Meta:
         collection_name = "listing_results_realestate_com_au"
+        # final = True
 
 class Listing(MongoModel):
     _id = fields.EmbeddedDocumentField(
@@ -28,6 +32,7 @@ class Listing(MongoModel):
     postcode = fields.CharField()
     class Meta:
         collection_name = "listings_realestate_com_au"
+        # final = True
 
 #####
 
