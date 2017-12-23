@@ -15,7 +15,7 @@ import pymongo
 # - If not, then update the field with an append and extract the html and append it to a dict containing the region
 # - Send emails to all recipients with email subject title organized by region
 
-RECIPIENTS = ["gavin.ong@builteasy.com.au"] #, "morgan@builteasy.com.au", "miran@builteasy.com.au", "gavin@builteasy.com.au"]
+RECIPIENTS = ["gavin.ong@builteasy.com.au", "morgan@builteasy.com.au", "miran@builteasy.com.au", "gavin@builteasy.com.au"]
 
 from pymongo import MongoClient
 client = MongoClient(MONGODB_URI + '/')
@@ -89,7 +89,7 @@ def generate_html(mongo_entries, mailer):
     
     # TODO: Generate the html email in jinja2
     email_html = "<br />\n<p>##############</p><br />".join(listing_htmls)
-    email_html.replace('href="/', 'href="http://www.realestate.com.au/'
+    email_html = email_html.replace('href="/', 'href="http://www.realestate.com.au/')
 
     # zip(listing_names, date_discovereds, listing_htmls)
     return email_html, affected_entries
