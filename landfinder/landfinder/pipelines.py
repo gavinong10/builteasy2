@@ -81,7 +81,7 @@ class LandfinderPipeline(object):
                 listingRes.save()
                 Listing.objects.raw(index).update({
                     "$addToSet": {
-                        "iterations": listingRes.to_mongo()
+                        "iterations": listingRes.to_son()
                     }
                 })
 
