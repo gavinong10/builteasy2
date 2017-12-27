@@ -74,10 +74,10 @@ class LandfinderPipeline(object):
             # exit(1)
             # Check if html has changed
 
-            
+            censored_html_iterations = [self.censor_html_links(
+                iteration.listing_html) for iteration in listing.iterations]
 
-            if self.censor_html_links(listing.iterations[-1].listing_html) != \
-                    self.censor_html_links(item["listing_html"]):
+            if self.censor_html_links(item["listing_html"]) not in censored_html_iterations:
                 listingRes.save()
                 Listing.objects.raw(index).update({
                     "$addToSet": {
