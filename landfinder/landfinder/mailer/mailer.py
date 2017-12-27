@@ -66,8 +66,8 @@ def extract_entries_for_region(region, group, mailer):
 def generate_html(mongo_entries, mailer):
     # Loop through each mongo entry and check all entries that don't have the mailer
     # Pull out the corresponding listing_name, date_discovered and listing_html
-    listing_names = []
-    date_discovereds = []
+    # listing_names = []
+    # date_discovereds = []
     listing_htmls = []
     
     affected_entries = []
@@ -82,9 +82,9 @@ def generate_html(mongo_entries, mailer):
         for iteration in unmailed_iterations:
             print "\n\niteration: ", iteration
             affected_entries += unmailed_iterations
-            listing_names.append(iteration["listing_name"])
+            # listing_names.append(iteration["listing_name"])
             # TODO: format to Brisbane time
-            date_discovereds.append(iteration["date_discovered"])
+            # date_discovereds.append(iteration["date_discovered"])
             listing_htmls.append(iteration["listing_html"])
     
     # TODO: Generate the html email in jinja2
