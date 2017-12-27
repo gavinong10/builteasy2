@@ -80,7 +80,7 @@ class LandfinderPipeline(object):
                     self.censor_html_links(item["listing_html"]):
                 Listing.objects.raw(index).update({
                     "$addToSet": {
-                        "iterations": listingRes
+                        "iterations": listingRes.values()
                     }
                 })
 
