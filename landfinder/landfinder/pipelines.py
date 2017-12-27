@@ -78,10 +78,9 @@ class LandfinderPipeline(object):
 
             if self.censor_html_links(listing.iterations[-1].listing_html) != \
                     self.censor_html_links(item["listing_html"]):
-                #iterations
                 Listing.objects.raw(index).update({
-                    "iterations": {
-                        '$addToSet': listingRes
+                    "$addToSet": {
+                        "iterations": listingRes
                     }
                 })
 
