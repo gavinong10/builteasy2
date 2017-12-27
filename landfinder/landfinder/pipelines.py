@@ -19,7 +19,14 @@ class LandfinderPipeline(object):
 
     @staticmethod
     def censor_html_links(html):
-        return re.sub(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", "", html)
+
+        # href=\"/floorplan_new.ds;jsessionid=9505BDCD1F622746D1521A0917A1FAE7?id=201921534&amp;theme=rea.buy\"
+        censored_html = re.sub(
+            r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", "", html)
+        
+        censored_html = re.sub(r"href=\\\".*\"", "", censored_html)
+
+        return censored_html
 
     @classmethod
     def from_crawler(cls, crawler):
