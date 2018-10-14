@@ -41,14 +41,15 @@ class LandListingsSpider(scrapy.Spider):
                   (row["State"], row["Postcode"], page, params) for _, row in df.iterrows()]
     
     def parse(self, response):
-        listings = response.xpath(
-            "//*[@id='searchResultsTbl']//*[contains(@class, 'listingInfo')]")
+        #from scrapy.shell import inspect_response
+        #inspect_response(response, self)
 
-        listing_names = listings.xpath("//*[@rel='listingName']/text()").extract()
-        listing_urls = listings.xpath(
-                    "//*[@rel='listingName']/@href").extract()
-        listing_htmls = listings.xpath(
-                    "//*[@rel='listingName']//ancestor::article").extract()
+        listings = response.xpath("//*[@class='tiered-results-container']//article[contains(@class, 'results-card')]")
+ 
+        listing_names = ["\n".join(listing.xpath(u".//*[contains(@class, 'card__info')]//text()").extract()) for listing in listings]
+        listing_urls = listings.xpath(".//*[contains(@class, 'card__info')]//*[contains(concat(' ', normalize-space(@class), ' '), ' details-link ')]/@href").extract()
+        listing_htmls = listings.xpath(".//*[contains(@class, 'card__info')]//ancestor::article").extract()
+
         postcode = re.search(r"qld\+(\d{4})", response.url).group(1)
 
         for i in range(len(listings)):
@@ -62,7 +63,7 @@ class LandListingsSpider(scrapy.Spider):
             yield item
 
         next_page=response.xpath(
-                    "//*[contains(@class, 'nextLink')]//a/@href").extract_first()
+                    "//*[contains(@class, 'pagination__next')]//a/@href").extract_first()
 
         # TODO: Only if database doesn't contain it
         if next_page is not None:
